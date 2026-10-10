@@ -38,20 +38,7 @@ export async function fetchFeed(signal?: AbortSignal): Promise<Item[]> {
       return reject(new DOMException('The user aborted a request.', 'AbortError'));
     }
 
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-    const onAbort = () => {
-      if (timeoutId !== undefined) {
-        clearTimeout(timeoutId);
-      }
-      reject(new DOMException('The user aborted a request.', 'AbortError'));
-    };
-
-    if (signal) {
-      signal.addEventListener('abort', onAbort, { once: true });
-    }
-
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       if (signal) {
         signal.removeEventListener('abort', onAbort);
       }
@@ -64,5 +51,14 @@ export async function fetchFeed(signal?: AbortSignal): Promise<Item[]> {
       // Return a copy of the 5 sample items
       resolve([...SAMPLE_ITEMS]);
     }, 1500);
+
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      reject(new DOMException('The user aborted a request.', 'AbortError'));
+    };
+
+    if (signal) {
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
   });
 }
