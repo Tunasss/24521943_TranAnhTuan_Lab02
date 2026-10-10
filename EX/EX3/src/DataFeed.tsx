@@ -9,6 +9,23 @@ import { useState, useRef, useEffect } from 'react';
 import type { JSX } from 'react';
 import type { Item, ViewState } from './types';
 import { fetchFeed } from './api';
+import './DataFeed.css';
+
+/**
+ * Skeleton loader component rendering 4 placeholder rows.
+ *
+ * @returns {JSX.Element} Unordered list of accessible skeleton placeholder rows.
+ */
+function Skeleton(): JSX.Element {
+  return (
+    <ul className="skeleton-list">
+      <li className="skeleton-row" aria-hidden="true" />
+      <li className="skeleton-row" aria-hidden="true" />
+      <li className="skeleton-row" aria-hidden="true" />
+      <li className="skeleton-row" aria-hidden="true" />
+    </ul>
+  );
+}
 
 /**
  * DataFeed Component.
@@ -88,9 +105,10 @@ export function DataFeed(): JSX.Element {
           className="feed-container loading-view"
           aria-busy="true"
           role="status"
-          aria-label="Feed loading"
+          aria-label="Loading feed"
         >
-          <p>Loading...</p>
+          <span className="visually-hidden">Loading feed</span>
+          <Skeleton />
         </section>
       );
 

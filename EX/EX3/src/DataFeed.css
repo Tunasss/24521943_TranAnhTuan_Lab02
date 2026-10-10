@@ -1,0 +1,58 @@
+/**
+ * @file DataFeed.css
+ * @description Accessible styles and skeleton loader animations for DataFeed.
+ * Satisfies WCAG 2.0 Level AA requirements:
+ * - .visually-hidden utility for screen-reader live status text.
+ * - Gentle skeleton pulse animation.
+ * - prefers-reduced-motion media query to halt animations for motion-sensitive users.
+ */
+
+/* Screen-reader-only accessible text utility */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skeleton list container */
+.skeleton-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+/* Skeleton placeholder row with gentle pulse animation */
+.skeleton-row {
+  height: 48px;
+  border-radius: 8px;
+  background: #d0d5dd;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Opacity pulse animation */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Motion sensitivity override (WCAG 2.2.2 Pause, Stop, Hide) */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-row {
+    animation: none;
+  }
+}
