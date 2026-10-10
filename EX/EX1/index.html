@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Mini-React VNode (Virtual Node) and Mounting Engine — lab exercise implementing createElement, createTextElement, and renderToDOM from scratch."
+    />
+    <title>Mini-React VNode and Mounting Engine</title>
+  </head>
+  <body>
+    <!--
+      Semantic structure required by project-rules.md Section 5.
+      <main> wraps the primary page content.
+      <section> provides a named landmark so screen readers can identify
+      the output area. A bare <div id="app"> as the sole child of <main>
+      is banned (div-soup rule); the <section> with aria-label resolves this.
+    -->
+    <main>
+      <section aria-label="Mini React output">
+        <!-- id="app" is the mount point consumed by test-runner.js -->
+        <div id="app"></div>
+      </section>
+    </main>
+
+    <!--
+      Entry point loaded as an ES Module (ECMAScript Module) so that
+      import/export syntax works without a bundler.
+    -->
+    <script type="module" src="./test-runner.js"></script>
+  </body>
+</html>
