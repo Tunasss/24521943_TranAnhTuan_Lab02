@@ -1,10 +1,12 @@
 /**
  * @file DataFeed.css
- * @description Accessible styles and skeleton loader animations for DataFeed.
+ * @description Accessible styles, skeleton loader animations, and view styles for DataFeed.
  * Satisfies WCAG 2.0 Level AA requirements:
  * - .visually-hidden utility for screen-reader live status text.
  * - Gentle skeleton pulse animation.
  * - prefers-reduced-motion media query to halt animations for motion-sensitive users.
+ * - High-contrast accessible button styles with visible focus ring.
+ * - Informative error state with heading and contrast >= 4.5:1.
  */
 
 /* Screen-reader-only accessible text utility */
@@ -55,4 +57,65 @@
   .skeleton-row {
     animation: none;
   }
+}
+
+/* Accessible button styling (contrast >= 4.5:1) */
+.btn {
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #0b57d0;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn:hover {
+  background: #0842a0;
+}
+
+/* Visible focus outline with offset for keyboard accessibility (WCAG 2.4.7) */
+.btn:focus-visible {
+  outline: 3px solid #0842a0;
+  outline-offset: 2px;
+}
+
+/* Error view container with distinct border, background, and dark text */
+.error-view {
+  border: 2px solid #b3261e;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fdecea;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.error-view h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  color: #b3261e;
+}
+
+.error-view p {
+  margin: 0 0 16px 0;
+  color: #1a1a1a;
+  line-height: 1.4;
+}
+
+/* Feed item list and cards */
+.feed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.feed-list li {
+  padding: 12px 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1a1a1a;
 }

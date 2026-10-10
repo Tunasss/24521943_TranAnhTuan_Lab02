@@ -93,7 +93,7 @@ export function DataFeed(): JSX.Element {
     case 'IDLE':
       return (
         <section className="feed-container idle-view" aria-label="Feed section">
-          <button type="button" onClick={loadData}>
+          <button type="button" className="btn" onClick={loadData}>
             Load Feed
           </button>
         </section>
@@ -115,7 +115,7 @@ export function DataFeed(): JSX.Element {
     case 'SUCCESS':
       return (
         <section className="feed-container success-view" aria-label="Feed items">
-          <ul>
+          <ul className="feed-list">
             {state.data.map((item) => (
               <li key={item.id}>{item.title}</li>
             ))}
@@ -125,9 +125,10 @@ export function DataFeed(): JSX.Element {
 
     case 'ERROR':
       return (
-        <section className="feed-container error-view" role="alert" aria-label="Feed error">
+        <section className="feed-container error-view" role="alert">
+          <h2>Something went wrong</h2>
           <p>{state.error}</p>
-          <button type="button" onClick={loadData}>
+          <button type="button" className="btn" onClick={loadData}>
             Retry Connection
           </button>
         </section>
