@@ -200,6 +200,8 @@ export function renderToDOM(vnode, container) {
 
       if (name === 'className') {
         domNode.className = value;
+      } else if (name === 'htmlFor') {
+        domNode.setAttribute('for', value);
       } else if (name.startsWith('on') && typeof value === 'function') {
         // Event delegation: Assign handler ID and register callback in handlerRegistry.
         // Never call addEventListener directly on child elements (DONT-03).

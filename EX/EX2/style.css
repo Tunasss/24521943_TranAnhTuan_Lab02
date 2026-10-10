@@ -1,0 +1,183 @@
+/**
+ * @file style.css
+ * @description Accessible styles for the Task Manager UI.
+ * Complies with WCAG 2.0 Level AA standards:
+ * - High contrast ratios (>= 4.5:1 for normal text, >= 3:1 for controls/focus rings).
+ * - Distinct, visible focus rings (:focus-visible).
+ */
+
+:root {
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --primary-color: #38bdf8;
+  --primary-hover: #0284c7;
+  --accent-color: #10b981;
+  --border-color: #334155;
+  --focus-ring: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+  padding: 2rem 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+#app {
+  width: 100%;
+  max-width: 600px;
+}
+
+.task-app {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Accessible interactive elements with visible focus rings (DO-09, WCAG 2.4.7) */
+button,
+input {
+  font: inherit;
+  color: inherit;
+  border-radius: 6px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Filter controls */
+.filters-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-btn {
+  background-color: #334155;
+  color: var(--text-primary);
+  border: 1px solid transparent;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.filter-btn:hover {
+  background-color: #475569;
+}
+
+.filter-btn[aria-pressed='true'] {
+  background-color: var(--primary-color);
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Add task section */
+.add-task-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.add-task-section label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.add-task-section input {
+  background-color: #0f172a;
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+}
+
+.add-task-section input:focus {
+  border-color: var(--primary-color);
+}
+
+.btn-add {
+  background-color: var(--primary-color);
+  color: #0f172a;
+  border: none;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-add:hover {
+  background-color: var(--primary-hover);
+  color: #ffffff;
+}
+
+/* Task list */
+.task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  background-color: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  gap: 1rem;
+}
+
+.task-text {
+  flex: 1;
+  word-break: break-word;
+}
+
+.task-item.done .task-text {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+.btn-toggle {
+  background-color: #1e293b;
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-toggle:hover {
+  background-color: #334155;
+  border-color: var(--primary-color);
+}
