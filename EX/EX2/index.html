@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Task Manager built with a custom Reactive State Machine (RSM) useState hook and Event Delegation Hub."
+    />
+    <title>Task Manager — Reactive State Machine</title>
+  </head>
+  <body>
+    <header>
+      <h1>Task Manager</h1>
+      <p>Reactive State Machine (RSM) &amp; Event Delegation Hub</p>
+    </header>
+
+    <!--
+      Semantic structure: <main> represents the dominant content of the document.
+      The mount container <div id="app"> will hold dynamic elements created
+      via document.createElement() and document.createTextNode().
+    -->
+    <main>
+      <section aria-label="Task Manager application">
+        <div id="app"></div>
+      </section>
+    </main>
+
+    <!--
+      Loaded as an ECMAScript Module (ESM) to support native import/export.
+    -->
+    <script type="module" src="./reactive-engine.js"></script>
+  </body>
+</html>
