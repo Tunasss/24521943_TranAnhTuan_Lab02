@@ -1,16 +1,21 @@
 /**
  * @file reactive-engine.js
- * @description Reactive State Machine (RSM) engine and mounting layer.
+ * @description Reactive State Machine (RSM) engine and mounting layer with Root Event Delegation.
  * Implements closure-based state management, custom useState hook,
- * Virtual Node (VNode) creation, and DOM (Document Object Model) mounting.
+ * Virtual Node (VNode) creation, DOM (Document Object Model) mounting, and
+ * centralized event delegation.
  *
  * Rules in force:
  * - DO-01: useState closure over single stateStore array and cursor integer.
  * - DO-02: Returns [value, setter] tuple, setter triggers re-render.
  * - DO-03: Immutable state updates.
+ * - DO-04: Exactly one root click listener on the container element.
+ * - DO-05: Centralized event delegation via handler registry.
  * - DO-06: document.createTextNode for all text nodes; no innerHTML.
  * - DO-10: JSDoc comments on all exported functions.
  * - DO-11: Expand abbreviations on first use.
+ * - DONT-03: Never call addEventListener on individual child elements.
+ * - DONT-07: Never add more than one root event listener of the same type.
  */
 
 // ============================================================================
@@ -45,6 +50,20 @@ let currentComponent = null;
 
 /** @type {HTMLElement|null} */
 let currentContainer = null;
+
+/**
+ * Registry mapping generated handler identifiers to event handler callbacks.
+ * Cleared at the beginning of each render pass.
+ *
+ * @type {Map<string, Function>}
+ */
+export const handlerRegistry = new Map();
+
+/** @type {number} */
+let nextHandlerId = 0;
+
+/** @type {WeakMap<HTMLElement, Function>} */
+const rootListeners = new WeakMap();
 
 /**
  * Resets the state store cursor to zero.
@@ -159,7 +178,8 @@ export function createElement(type, props, ...children) {
 
 /**
  * Mounts a Virtual Node (VNode) tree onto a real DOM node using safe DOM methods.
- * Uses document.createTextNode for text to prevent Cross-Site Scripting (XSS).
+ * Event handlers starting with "on" are registered in handlerRegistry with a data-handler-id
+ * instead of attaching per-element event listeners (DO-04, DONT-03).
  *
  * @param {Object} vnode - The VNode to render.
  * @param {Node|null} container - Target DOM node to append the rendered element to.
@@ -181,8 +201,13 @@ export function renderToDOM(vnode, container) {
       if (name === 'className') {
         domNode.className = value;
       } else if (name.startsWith('on') && typeof value === 'function') {
+        // Event delegation: Assign handler ID and register callback in handlerRegistry.
+        // Never call addEventListener directly on child elements (DONT-03).
         const eventType = name.slice(2).toLowerCase();
-        domNode.addEventListener(eventType, value);
+        const handlerId = String(nextHandlerId++);
+        domNode.setAttribute('data-handler-id', handlerId);
+        domNode.setAttribute('data-event', eventType);
+        handlerRegistry.set(handlerId, value);
       } else {
         domNode.setAttribute(name, value);
       }
@@ -201,9 +226,62 @@ export function renderToDOM(vnode, container) {
 }
 
 /**
+ * Attaches the single root event delegation listener to the container.
+ * Uses a flag guard to ensure the listener is registered only once across renders (DO-04, DONT-07).
+ *
+ * @param {HTMLElement} container - The host DOM container.
+ * @returns {void}
+ */
+function setupEventDelegation(container) {
+  if (container.__hasDelegatedListener) {
+    return;
+  }
+  container.__hasDelegatedListener = true;
+
+  const handleRootClick = (event) => {
+    const target = event.target?.closest
+      ? event.target.closest('[data-handler-id]')
+      : null;
+
+    if (!target || !container.contains(target)) {
+      return;
+    }
+
+    const targetEvent = target.dataset?.event || target.getAttribute('data-event');
+    if (targetEvent && targetEvent !== event.type) {
+      return;
+    }
+
+    const handlerId = target.dataset?.handlerId || target.getAttribute('data-handler-id');
+    const handler = handlerRegistry.get(handlerId);
+    if (typeof handler === 'function') {
+      handler(event);
+    }
+  };
+
+  rootListeners.set(container, handleRootClick);
+  container.addEventListener('click', handleRootClick);
+}
+
+/**
+ * Removes the root event delegation listener from the container (DO-14).
+ *
+ * @param {HTMLElement} container - The host DOM container.
+ * @returns {void}
+ */
+export function removeEventDelegation(container) {
+  const listener = rootListeners.get(container);
+  if (listener) {
+    container.removeEventListener('click', listener);
+    rootListeners.delete(container);
+    container.__hasDelegatedListener = false;
+  }
+}
+
+/**
  * Renders the application component into the DOM container.
- * Stores Component and container references for subsequent reactive updates,
- * resets cursor, generates the VNode tree, and replaces container children.
+ * Clears the handler registry, ensures the root event delegation listener is attached once,
+ * resets the cursor, generates the VNode tree, and updates the container DOM.
  *
  * @param {Function} Component - The root component function returning a VNode.
  * @param {HTMLElement} container - The host DOM container.
@@ -212,6 +290,13 @@ export function renderToDOM(vnode, container) {
 export function renderApp(Component, container) {
   currentComponent = Component;
   currentContainer = container;
+
+  // Clear handler registry and reset handler identifier counter at the start of each render pass
+  handlerRegistry.clear();
+  nextHandlerId = 0;
+
+  // Attach exactly ONE click listener to the root container (guarded with flag)
+  setupEventDelegation(container);
 
   resetCursor();
   const vnode = Component();
