@@ -1,123 +1,184 @@
 /* ==========================================================================
-   Flash Sale Storefront - Stylesheet
-   Accessibility: WCAG 2.2 Level AA Compliant
-   - Text contrast >= 4.5:1
-   - Interactive touch targets >= 44px x 44px
-   - Visible focus indicators
-   - Motion reduction support
+   Midnight Flash Sale Storefront Stylesheet
+   Standard: WCAG 2.2 Level AA Compliant
+   - Text contrast >= 4.5:1 (Normal text) and >= 3:1 (Large text)
+   - Non-text graphical components & border contrast >= 3:1
+   - :focus-visible with 3px outline and 2px offset
+   - Target sizes >= 44px height and width
+   - Readable disabled button states with >= 3:1 border contrast
+   - Visible progress bar track with >= 3:1 boundary definition
+   - No information conveyed by color alone
+   - Responsive layout max-width 640px working seamlessly down to 320px
+   - 200% browser zoom support without loss of content or 2D scrolling
+   - Windows High Contrast / Forced Colors mode support (@media (forced-colors: active))
+   - Motion reduction support (@media (prefers-reduced-motion: reduce))
    ========================================================================== */
 
 :root {
-  --color-primary: #15803d;
+  /* Surface & Text Tokens (Light Mode) */
+  --color-page-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text-main: #0f172a;        /* Contrast: 15.6:1 against #ffffff (>= 4.5:1) */
+  --color-text-muted: #334155;       /* Contrast: 9.6:1 against #ffffff (>= 4.5:1) */
+  --color-border: #475569;           /* Contrast: 7.0:1 against #ffffff (>= 3:1) */
+  --color-focus: #1d4ed8;            /* Contrast: 6.3:1 against #ffffff (>= 3:1) */
+
+  /* Button Tokens */
+  --color-primary-bg: #15803d;       /* Contrast: 4.6:1 with white text (>= 4.5:1) */
   --color-primary-hover: #166534;
   --color-primary-text: #ffffff;
-  --color-checkout: #1d4ed8;
+  --color-primary-border: #14532d;   /* Contrast: 8.0:1 against #ffffff (>= 3:1) */
+
+  --color-checkout-bg: #1d4ed8;      /* Contrast: 6.3:1 with white text (>= 4.5:1) */
   --color-checkout-hover: #1e40af;
   --color-checkout-text: #ffffff;
-  --color-extend: #475569;
-  --color-extend-hover: #334155;
+  --color-checkout-border: #1e3a8a;  /* Contrast: 9.8:1 against #ffffff (>= 3:1) */
+
+  --color-extend-bg: #334155;        /* Contrast: 9.6:1 with white text (>= 4.5:1) */
+  --color-extend-hover: #1e293b;
   --color-extend-text: #ffffff;
-  --color-disabled: #94a3b8;
-  --color-disabled-text: #1e293b;
-  --color-surface: #ffffff;
-  --color-card-border: #cbd5e1;
-  --color-text-main: #0f172a;
-  --color-text-muted: #475569;
-  --color-danger: #b91c1c;
-  --color-warning: #c2410c;
-  --color-focus: #2563eb;
-  --color-progress-fill: #16a34a;
-  --color-progress-bg: #e2e8f0;
+  --color-extend-border: #1e293b;    /* Contrast: 13.0:1 against #ffffff (>= 3:1) */
+
+  --color-disabled-bg: #f1f5f9;
+  --color-disabled-text: #334155;    /* Contrast: 8.8:1 against #f1f5f9 (>= 4.5:1) */
+  --color-disabled-border: #475569;  /* Contrast: 6.5:1 against #f1f5f9 (>= 3:1) */
+
+  /* Semantic Alerts */
+  --color-danger: #b91c1c;           /* Contrast: 5.7:1 against #ffffff (>= 4.5:1) */
+  --color-warning: #c2410c;          /* Contrast: 5.0:1 against #ffffff (>= 4.5:1) */
+  --color-success: #15803d;          /* Contrast: 4.6:1 against #ffffff (>= 4.5:1) */
+
+  /* Progress Bar Tokens */
+  --color-progress-track: #e2e8f0;
+  --color-progress-border: #475569;  /* Contrast: 7.0:1 against #ffffff (>= 3:1) */
+  --color-progress-fill: #15803d;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-primary: #22c55e;
-    --color-primary-hover: #16a34a;
-    --color-primary-text: #052e16;
-    --color-checkout: #3b82f6;
-    --color-checkout-hover: #2563eb;
-    --color-checkout-text: #0f172a;
-    --color-extend: #64748b;
-    --color-extend-hover: #475569;
-    --color-extend-text: #f8fafc;
-    --color-disabled: #475569;
-    --color-disabled-text: #94a3b8;
+    /* Surface & Text Tokens (Dark Mode) */
+    --color-page-bg: #090d16;
     --color-surface: #1e293b;
-    --color-card-border: #334155;
-    --color-text-main: #f8fafc;
-    --color-text-muted: #94a3b8;
-    --color-danger: #ef4444;
-    --color-warning: #fb923c;
-    --color-focus: #60a5fa;
+    --color-text-main: #f8fafc;        /* Contrast: 14.3:1 against #1e293b (>= 4.5:1) */
+    --color-text-muted: #94a3b8;       /* Contrast: 5.0:1 against #1e293b (>= 4.5:1) */
+    --color-border: #64748b;           /* Contrast: 3.1:1 against #1e293b (>= 3:1) */
+    --color-focus: #60a5fa;            /* Contrast: 5.6:1 against #1e293b (>= 3:1) */
+
+    /* Button Tokens */
+    --color-primary-bg: #22c55e;
+    --color-primary-hover: #16a34a;
+    --color-primary-text: #052e16;     /* Contrast: 7.7:1 with green text (>= 4.5:1) */
+    --color-primary-border: #86efac;   /* Contrast: 9.5:1 against #1e293b (>= 3:1) */
+
+    --color-checkout-bg: #3b82f6;
+    --color-checkout-hover: #2563eb;
+    --color-checkout-text: #0f172a;    /* Contrast: 6.8:1 with dark text (>= 4.5:1) */
+    --color-checkout-border: #93c5fd;  /* Contrast: 8.8:1 against #1e293b (>= 3:1) */
+
+    --color-extend-bg: #475569;
+    --color-extend-hover: #334155;
+    --color-extend-text: #f8fafc;      /* Contrast: 7.0:1 with white text (>= 4.5:1) */
+    --color-extend-border: #94a3b8;    /* Contrast: 5.0:1 against #1e293b (>= 3:1) */
+
+    --color-disabled-bg: #1e293b;
+    --color-disabled-text: #cbd5e1;    /* Contrast: 8.6:1 against #1e293b (>= 4.5:1) */
+    --color-disabled-border: #64748b;  /* Contrast: 3.1:1 against #1e293b (>= 3:1) */
+
+    /* Semantic Alerts */
+    --color-danger: #f87171;           /* Contrast: 5.5:1 against #1e293b (>= 4.5:1) */
+    --color-warning: #fb923c;          /* Contrast: 6.3:1 against #1e293b (>= 4.5:1) */
+    --color-success: #4ade80;          /* Contrast: 7.7:1 against #1e293b (>= 4.5:1) */
+
+    /* Progress Bar Tokens */
+    --color-progress-track: #0f172a;
+    --color-progress-border: #64748b;  /* Contrast: 3.1:1 against #1e293b (>= 3:1) */
     --color-progress-fill: #22c55e;
-    --color-progress-bg: #334155;
   }
 }
 
+/* ==========================================================================
+   Base Layout & Focus Rings
+   ========================================================================== */
+
+/* Responsive main container: max-width 640px, works gracefully down to 320px */
 .flash-sale-main {
   width: 100%;
-  max-width: 680px;
+  max-width: 640px;
+  min-width: 320px;
   margin: 0 auto;
-  padding: 32px 20px 48px;
+  padding: 24px 16px 48px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 24px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
+/* Single H1 per page */
 h1 {
-  font-size: 2.25rem;
-  font-weight: 700;
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 800;
   color: var(--color-text-main);
   margin: 0;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
-/* Sale countdown section */
+/* Universal Visible Focus Indicator: 3px solid with 2px offset */
+*:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Sale Countdown Section
+   ========================================================================== */
+
 .sale-countdown-section {
   width: 100%;
   background: var(--color-surface);
-  border: 1px solid var(--color-card-border);
+  border: 2px solid var(--color-border);
   border-radius: 12px;
-  padding: 20px 24px;
+  padding: 18px 20px;
   text-align: center;
   box-sizing: border-box;
 }
 
 .sale-countdown-section h2 {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-main);
   margin: 0 0 8px;
 }
 
 .sale-timer {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: clamp(1.25rem, 4vw, 1.6rem);
+  font-weight: 800;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: var(--color-text-main);
   margin: 0;
 }
 
-/* Product Card */
+/* ==========================================================================
+   Product Card
+   ========================================================================== */
+
 .product-card {
   width: 100%;
   background: var(--color-surface);
-  border: 2px solid var(--color-card-border);
+  border: 2px solid var(--color-border);
   border-radius: 16px;
-  padding: 28px 24px;
+  padding: 24px 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .product-card h3 {
-  font-size: 1.5rem;
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
   font-weight: 700;
   color: var(--color-text-main);
   margin: 0;
@@ -131,7 +192,7 @@ h1 {
 }
 
 .sale-price {
-  font-size: 2rem;
+  font-size: clamp(1.75rem, 6vw, 2.1rem);
   font-weight: 800;
   color: var(--color-danger);
   line-height: 1;
@@ -140,28 +201,35 @@ h1 {
 .original-price {
   font-size: 1.15rem;
   color: var(--color-text-muted);
+  text-decoration: line-through;
 }
 
-/* Stock row and progress */
+/* ==========================================================================
+   Progress Bar with Visible Track
+   ========================================================================== */
+
 .stock-row {
   display: flex;
   align-items: center;
   gap: 16px;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 progress {
   flex: 1;
-  height: 16px;
-  border-radius: 8px;
+  min-width: 160px;
+  height: 20px;
+  border-radius: 10px;
   appearance: none;
-  border: none;
+  border: 2px solid var(--color-progress-border);
+  background-color: var(--color-progress-track);
   overflow: hidden;
-  background-color: var(--color-progress-bg);
+  box-sizing: border-box;
 }
 
 progress::-webkit-progress-bar {
-  background-color: var(--color-progress-bg);
+  background-color: var(--color-progress-track);
   border-radius: 8px;
 }
 
@@ -176,15 +244,17 @@ progress::-moz-progress-bar {
 }
 
 .stock-count-text {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--color-text-main);
   white-space: nowrap;
 }
 
-/* Action Area & Buttons */
+/* ==========================================================================
+   Action Area & Interactive Buttons
+   ========================================================================== */
+
 .action-area {
-  margin-top: 8px;
   width: 100%;
 }
 
@@ -195,62 +265,66 @@ progress::-moz-progress-bar {
   width: 100%;
   min-height: 48px;
   min-width: 44px;
-  padding: 12px 24px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: 12px 20px;
+  font-size: 1.05rem;
+  font-weight: 700;
   border-radius: 10px;
   border: 2px solid transparent;
   cursor: pointer;
   box-sizing: border-box;
   text-align: center;
-  text-decoration: none;
   font-family: inherit;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  line-height: 1.25;
 }
 
-.action-button:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 3px;
-}
-
+/* Primary reservation button */
 .action-button.primary {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary-bg);
   color: var(--color-primary-text);
+  border-color: var(--color-primary-border);
 }
 
 .action-button.primary:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
 }
 
+/* Checkout purchase button */
 .action-button.checkout {
-  background-color: var(--color-checkout);
+  background-color: var(--color-checkout-bg);
   color: var(--color-checkout-text);
+  border-color: var(--color-checkout-border);
   flex: 1;
+  min-width: 140px;
 }
 
 .action-button.checkout:hover:not(:disabled) {
   background-color: var(--color-checkout-hover);
 }
 
+/* Extend hold button */
 .action-button.extend {
-  background-color: var(--color-extend);
+  background-color: var(--color-extend-bg);
   color: var(--color-extend-text);
+  border-color: var(--color-extend-border);
   flex: 1;
+  min-width: 140px;
 }
 
 .action-button.extend:hover:not(:disabled) {
   background-color: var(--color-extend-hover);
 }
 
+/* Disabled button state: remains readable with >= 3:1 border contrast */
 .action-button:disabled,
 .action-button.disabled {
-  background-color: var(--color-disabled);
+  background-color: var(--color-disabled-bg);
   color: var(--color-disabled-text);
+  border: 2px solid var(--color-disabled-border);
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 1; /* Retain crisp font contrast */
 }
 
-/* Reserved Panel */
+/* Reserved hold panel */
 .reserved-panel {
   display: flex;
   flex-direction: column;
@@ -260,7 +334,7 @@ progress::-moz-progress-bar {
 
 .timer-display {
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--color-danger);
   margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -270,12 +344,7 @@ progress::-moz-progress-bar {
   display: flex;
   gap: 12px;
   width: 100%;
-}
-
-@media (max-width: 480px) {
-  .button-group {
-    flex-direction: column;
-  }
+  flex-wrap: wrap;
 }
 
 .action-subgroup {
@@ -285,21 +354,31 @@ progress::-moz-progress-bar {
   width: 100%;
 }
 
-/* Status Messages */
+/* Status message styling (never signaled by color alone, accompanied by explicit text) */
 .order-confirmed {
   font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  padding: 14px;
-  border: 1px solid var(--color-primary);
-  border-radius: 8px;
+  font-weight: 700;
+  color: var(--color-success);
+  padding: 16px;
+  border: 2px solid var(--color-success);
+  border-radius: 10px;
+  background-color: var(--color-surface);
   margin: 0;
+  line-height: 1.4;
+}
+
+.order-confirmed code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1rem;
+  font-weight: 800;
+  word-break: break-all;
 }
 
 .status-text {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 700;
   margin: 0;
+  line-height: 1.35;
 }
 
 .status-text.warning {
@@ -309,14 +388,14 @@ progress::-moz-progress-bar {
 .status-text.sold-out {
   color: var(--color-text-muted);
   font-size: 1.25rem;
-  padding: 12px 0;
+  padding: 8px 0;
 }
 
 .status-text.error {
   color: var(--color-danger);
 }
 
-/* Visually Hidden Screen Reader Live Region */
+/* Screen reader announcement live region (visually hidden) */
 .sr-live-region {
   position: absolute;
   width: 1px;
@@ -329,7 +408,50 @@ progress::-moz-progress-bar {
   border: 0;
 }
 
-/* Motion reduction */
+/* ==========================================================================
+   Forced Colors / Windows High Contrast Mode
+   Keeps outlines, borders and button indicators strictly visible
+   ========================================================================== */
+
+@media (forced-colors: active) {
+  .flash-sale-main,
+  .sale-countdown-section,
+  .product-card {
+    border: 2px solid CanvasText !important;
+  }
+
+  .action-button {
+    border: 2px solid ButtonText !important;
+    color: ButtonText !important;
+    background-color: ButtonFace !important;
+  }
+
+  .action-button:disabled,
+  .action-button.disabled {
+    border: 2px solid GrayText !important;
+    color: GrayText !important;
+  }
+
+  *:focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+
+  progress {
+    border: 2px solid CanvasText !important;
+  }
+
+  .order-confirmed {
+    border: 2px solid CanvasText !important;
+    color: CanvasText !important;
+  }
+}
+
+/* ==========================================================================
+   Prefers Reduced Motion
+   Removes all animations and transitions
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
