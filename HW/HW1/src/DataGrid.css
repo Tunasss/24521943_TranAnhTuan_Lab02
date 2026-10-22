@@ -11,6 +11,55 @@
   border: 0;
 }
 
+/* DataGrid wrapper */
+.datagrid-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Filter controls area above the table */
+.filter-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  gap: 0.35rem;
+  text-align: left;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: var(--text-h, #08060d);
+  font-size: 0.95rem;
+}
+
+.filter-input {
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 38px;
+  min-width: 280px;
+  max-width: 100%;
+  border: 1px solid var(--border, #e5e4e7);
+  border-radius: 6px;
+  background-color: var(--bg, #fff);
+  color: var(--text-h, #08060d);
+  box-sizing: border-box;
+}
+
+.filter-input:focus-visible {
+  outline: 2px solid var(--accent, #aa3bff);
+  outline-offset: 2px;
+  border-color: transparent;
+}
+
+.filter-status {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text, #6b6375);
+}
+
 /* Sort button styling ensuring accessible keyboard focus and target size */
 .sort-button {
   background: transparent;
@@ -46,4 +95,12 @@
 .sort-indicator-inactive {
   font-size: 0.85em;
   opacity: 0.4;
+}
+
+/* Empty state / No results cell */
+.no-results-cell {
+  text-align: center;
+  padding: 2.5rem 1rem !important;
+  font-style: italic;
+  color: var(--text, #6b6375);
 }
