@@ -97,6 +97,27 @@
   opacity: 0.4;
 }
 
+/* Cell keyboard navigation and roving tabindex focus */
+table[role='grid'] td[role='gridcell'] {
+  user-select: text;
+}
+
+table[role='grid'] td[role='gridcell']:focus {
+  outline: 2px solid var(--accent, #aa3bff);
+  outline-offset: -2px;
+  background-color: var(--code-bg, #f4f3ec);
+}
+
+/* Selected row visual indication */
+table[role='grid'] tbody tr.selected-row {
+  background-color: var(--accent-bg, rgba(170, 59, 255, 0.15));
+  border-left: 3px solid var(--accent, #aa3bff);
+}
+
+table[role='grid'] tbody tr.selected-row:hover {
+  background-color: rgba(170, 59, 255, 0.22);
+}
+
 /* Empty state / No results cell */
 .no-results-cell {
   text-align: center;

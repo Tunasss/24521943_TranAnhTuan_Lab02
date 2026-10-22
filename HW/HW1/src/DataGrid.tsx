@@ -1,19 +1,33 @@
-import { useId, useMemo, useState, type ChangeEvent, type ReactElement } from 'react';
+import {
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type ReactElement,
+} from 'react';
 import type { DataGridProps } from './data-grid-contract';
 import './DataGrid.css';
 
 type SortDirection = 'asc' | 'desc';
 
+interface ActiveCellCoordinate {
+  row: number;
+  col: number;
+}
+
 /**
- * DataGrid component featuring sorting, multi-column filtering, client-side pagination,
- * semantic HTML table markup, and WCAG 2.2 Level AA / ARIA grid compliant accessibility.
+ * DataGrid component with roving tabindex keyboard navigation, sorting,
+ * filtering, pagination, semantic HTML, and ARIA grid role semantics.
  *
- * Invariant: Preserves the public contract, executes operations in order (filter -> sort -> paginate),
- * and enforces strict type safety without mutating input props.
+ * Invariant: Preserves the public contract, maintains generic typing without any,
+ * and manages focus exclusively via React refs (no querySelector).
  */
 export function DataGrid<T extends object>({
   data,
   columns,
+  onRowSelect,
   ariaLabel,
 }: DataGridProps<T>): ReactElement {
   const filterInputId = useId();
@@ -25,6 +39,37 @@ export function DataGrid<T extends object>({
   const [filterText, setFilterText] = useState<string>('');
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Keyboard navigation & row selection states
+  const [activeCell, setActiveCell] = useState<ActiveCellCoordinate>({ row: 0, col: 0 });
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string | number>>(new Set());
+
+  // React ref storage for body cell elements (keyed by "rowIndex-colIndex")
+  const cellRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
+
+  const getCellKey = (rowIndex: number, colIndex: number): string =>
+    `${rowIndex}-${colIndex}`;
+
+  const setCellRef =
+    (rowIndex: number, colIndex: number) =>
+    (element: HTMLTableCellElement | null): void => {
+      const key = getCellKey(rowIndex, colIndex);
+      if (element) {
+        cellRefs.current.set(key, element);
+      } else {
+        cellRefs.current.delete(key);
+      }
+    };
+
+  /**
+   * Helper extracting a stable identifier for each record to prevent selection drift.
+   */
+  const getRowKey = (item: T, fallbackIndex: number): string | number => {
+    if ('id' in item && (typeof item.id === 'string' || typeof item.id === 'number')) {
+      return item.id;
+    }
+    return fallbackIndex;
+  };
 
   // 1. Filter: Case-insensitive match across all defined columns
   const filteredData = useMemo(() => {
@@ -81,12 +126,27 @@ export function DataGrid<T extends object>({
     return sortedData.slice(startIndex, startIndex + pageSize);
   }, [sortedData, effectivePage, pageSize]);
 
+  // Derived clamped active cell coordinates to prevent overflow without cascading renders
+  const clampedRow =
+    paginatedData.length === 0
+      ? 0
+      : Math.min(Math.max(0, activeCell.row), paginatedData.length - 1);
+  const clampedCol =
+    columns.length === 0
+      ? 0
+      : Math.min(Math.max(0, activeCell.col), columns.length - 1);
+  const currentActiveCell: ActiveCellCoordinate = {
+    row: clampedRow,
+    col: clampedCol,
+  };
+
   /**
    * Updates filter query and resets page to 1.
    */
   const handleFilterChange = (event: ChangeEvent<HTMLInputElement>): void => {
     setFilterText(event.target.value);
     setCurrentPage(1);
+    setActiveCell({ row: 0, col: 0 });
   };
 
   /**
@@ -97,6 +157,7 @@ export function DataGrid<T extends object>({
     setPageSize(newSize);
     const newTotalPages = Math.max(1, Math.ceil(sortedData.length / newSize));
     setCurrentPage((prev) => Math.min(Math.max(1, prev), newTotalPages));
+    setActiveCell({ row: 0, col: 0 });
   };
 
   /**
@@ -104,6 +165,7 @@ export function DataGrid<T extends object>({
    */
   const handlePrevPage = (): void => {
     setCurrentPage((prev) => Math.max(1, prev - 1));
+    setActiveCell({ row: 0, col: 0 });
   };
 
   /**
@@ -111,6 +173,7 @@ export function DataGrid<T extends object>({
    */
   const handleNextPage = (): void => {
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+    setActiveCell({ row: 0, col: 0 });
   };
 
   /**
@@ -123,6 +186,75 @@ export function DataGrid<T extends object>({
     } else {
       setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     }
+  };
+
+  /**
+   * Two-dimensional keyboard navigation handling roving tabindex across grid cells.
+   * Prevents default browser scroll on handled keys and focuses the new cell using React refs.
+   */
+  const handleKeyDown = (event: KeyboardEvent<HTMLTableSectionElement>): void => {
+    const rowCount = paginatedData.length;
+    const colCount = columns.length;
+
+    if (rowCount === 0) {
+      return;
+    }
+
+    let nextRow = currentActiveCell.row;
+    let nextCol = currentActiveCell.col;
+
+    switch (event.key) {
+      case 'ArrowUp':
+        nextRow = Math.max(0, currentActiveCell.row - 1);
+        break;
+      case 'ArrowDown':
+        nextRow = Math.min(rowCount - 1, currentActiveCell.row + 1);
+        break;
+      case 'ArrowLeft':
+        nextCol = Math.max(0, currentActiveCell.col - 1);
+        break;
+      case 'ArrowRight':
+        nextCol = Math.min(colCount - 1, currentActiveCell.col + 1);
+        break;
+      case 'Home':
+        nextCol = 0;
+        break;
+      case 'End':
+        nextCol = colCount - 1;
+        break;
+      case 'Enter': {
+        const activeItem = paginatedData[currentActiveCell.row];
+        if (activeItem && onRowSelect) {
+          onRowSelect(activeItem);
+        }
+        event.preventDefault();
+        return;
+      }
+      case ' ': {
+        const activeItem = paginatedData[currentActiveCell.row];
+        if (activeItem) {
+          const rowId = getRowKey(activeItem, currentActiveCell.row);
+          setSelectedRowIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(rowId)) {
+              next.delete(rowId);
+            } else {
+              next.add(rowId);
+            }
+            return next;
+          });
+        }
+        event.preventDefault();
+        return;
+      }
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    setActiveCell({ row: nextRow, col: nextCol });
+    const targetCell = cellRefs.current.get(getCellKey(nextRow, nextCol));
+    targetCell?.focus();
   };
 
   return (
@@ -197,7 +329,7 @@ export function DataGrid<T extends object>({
             })}
           </tr>
         </thead>
-        <tbody>
+        <tbody onKeyDown={handleKeyDown}>
           {paginatedData.length === 0 ? (
             <tr role="row">
               <td
@@ -209,15 +341,43 @@ export function DataGrid<T extends object>({
               </td>
             </tr>
           ) : (
-            paginatedData.map((item, rowIndex) => (
-              <tr key={rowIndex} role="row">
-                {columns.map((column) => (
-                  <td key={String(column.accessorKey)} role="gridcell">
-                    {String(item[column.accessorKey])}
-                  </td>
-                ))}
-              </tr>
-            ))
+            paginatedData.map((item, rowIndex) => {
+              const rowId = getRowKey(item, rowIndex);
+              const isSelected = selectedRowIds.has(rowId);
+
+              return (
+                <tr
+                  key={String(rowId)}
+                  role="row"
+                  aria-selected={isSelected}
+                  className={isSelected ? 'selected-row' : undefined}
+                >
+                  {columns.map((column, colIndex) => {
+                    const isActive =
+                      rowIndex === currentActiveCell.row &&
+                      colIndex === currentActiveCell.col;
+
+                    return (
+                      <td
+                        key={String(column.accessorKey)}
+                        ref={setCellRef(rowIndex, colIndex)}
+                        role="gridcell"
+                        tabIndex={isActive ? 0 : -1}
+                        onClick={() => {
+                          setActiveCell({ row: rowIndex, col: colIndex });
+                          cellRefs.current.get(getCellKey(rowIndex, colIndex))?.focus();
+                        }}
+                        onFocus={() => {
+                          setActiveCell({ row: rowIndex, col: colIndex });
+                        }}
+                      >
+                        {String(item[column.accessorKey])}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

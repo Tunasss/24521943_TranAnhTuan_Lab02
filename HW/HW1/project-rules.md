@@ -152,12 +152,14 @@ Keyboard focus within the grid body and header must follow standard directional 
 
 ### 6.2 Action and Activation Keys
 - **Enter**:
+  - On a table row/cell: triggers the `onRowSelect(item)` callback for the active row record.
   - On a sortable column header, toggles sorting direction (unsorted to ascending, ascending to descending, descending to unsorted).
   - On an interactive cell containing a link or button, activates that control.
   - On an editable cell, enters cell edit mode and places focus inside the editor control.
 - **Space**:
-  - On a selectable row cell or checkbox, toggles the selection state of the row.
-  - On a sortable column header, toggles sorting direction.
+  - On a data row: toggles the `aria-selected="true"|"false"` state of the active row and updates the selected rows set.
+  - Must call `event.preventDefault()` to prevent default browser page scrolling.
+  - On a sortable column header button, toggles sorting direction.
 - **Escape**:
   - When in cell edit mode, cancels the edit, restores previous content, and returns focus to the containing cell.
   - When a filter popup or context menu is open, closes the menu and returns focus to the initiating trigger button.
