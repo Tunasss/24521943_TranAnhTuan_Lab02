@@ -277,110 +277,121 @@ export function DataGrid<T extends object>({
         </p>
       </div>
 
-      {/* Semantic Table Structure */}
-      <table role="grid" aria-label={ariaLabel}>
-        <thead>
-          <tr role="row">
-            {columns.map((column) => {
-              const isSortable = Boolean(column.sortable);
-              const isActive = sortKey === column.accessorKey;
-              const ariaSortValue = isSortable
-                ? isActive
-                  ? sortDirection === 'asc'
-                    ? 'ascending'
-                    : 'descending'
-                  : 'none'
-                : undefined;
-
-              return (
-                <th
-                  key={String(column.accessorKey)}
-                  scope="col"
-                  aria-sort={ariaSortValue}
-                >
-                  {isSortable ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSort(column.accessorKey)}
-                      className="sort-button"
-                    >
-                      <span>{column.header}</span>
-                      {isActive ? (
-                        <>
-                          <span className="visually-hidden">
-                            {sortDirection === 'asc' ? ' ascending' : ' descending'}
-                          </span>
-                          <span aria-hidden="true" className="sort-indicator">
-                            {sortDirection === 'asc' ? ' ▲' : ' ▼'}
-                          </span>
-                        </>
-                      ) : (
-                        <span aria-hidden="true" className="sort-indicator-inactive">
-                          {' '}
-                          ↕
-                        </span>
-                      )}
-                    </button>
-                  ) : (
-                    column.header
-                  )}
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody onKeyDown={handleKeyDown}>
-          {paginatedData.length === 0 ? (
+      {/* Responsive Table Scroll Region: One allowed div wrapper with accessible region role */}
+      <div
+        className="table-scroll-container"
+        tabIndex={0}
+        role="region"
+        aria-label={`${ariaLabel} scroll region`}
+      >
+        <table role="grid" aria-label={ariaLabel}>
+          <thead>
             <tr role="row">
-              <td
-                role="gridcell"
-                colSpan={columns.length}
-                className="no-results-cell"
-              >
-                No results
-              </td>
-            </tr>
-          ) : (
-            paginatedData.map((item, rowIndex) => {
-              const rowId = getRowKey(item, rowIndex);
-              const isSelected = selectedRowIds.has(rowId);
+              {columns.map((column) => {
+                const isSortable = Boolean(column.sortable);
+                const isActive = sortKey === column.accessorKey;
+                const ariaSortValue = isSortable
+                  ? isActive
+                    ? sortDirection === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                  : undefined;
 
-              return (
-                <tr
-                  key={String(rowId)}
-                  role="row"
-                  aria-selected={isSelected}
-                  className={isSelected ? 'selected-row' : undefined}
-                >
-                  {columns.map((column, colIndex) => {
-                    const isActive =
-                      rowIndex === currentActiveCell.row &&
-                      colIndex === currentActiveCell.col;
-
-                    return (
-                      <td
-                        key={String(column.accessorKey)}
-                        ref={setCellRef(rowIndex, colIndex)}
-                        role="gridcell"
-                        tabIndex={isActive ? 0 : -1}
-                        onClick={() => {
-                          setActiveCell({ row: rowIndex, col: colIndex });
-                          cellRefs.current.get(getCellKey(rowIndex, colIndex))?.focus();
-                        }}
-                        onFocus={() => {
-                          setActiveCell({ row: rowIndex, col: colIndex });
-                        }}
+                return (
+                  <th
+                    key={String(column.accessorKey)}
+                    scope="col"
+                    aria-sort={ariaSortValue}
+                  >
+                    {isSortable ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSort(column.accessorKey)}
+                        className="sort-button"
                       >
-                        {String(item[column.accessorKey])}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                        <span>{column.header}</span>
+                        {isActive ? (
+                          <>
+                            <span className="visually-hidden">
+                              {sortDirection === 'asc' ? ' ascending' : ' descending'}
+                            </span>
+                            <span aria-hidden="true" className="sort-indicator">
+                              {sortDirection === 'asc' ? ' ▲' : ' ▼'}
+                            </span>
+                          </>
+                        ) : (
+                          <span aria-hidden="true" className="sort-indicator-inactive">
+                            {' '}
+                            ↕
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      column.header
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody onKeyDown={handleKeyDown}>
+            {paginatedData.length === 0 ? (
+              <tr role="row">
+                <td
+                  role="gridcell"
+                  colSpan={columns.length}
+                  className="no-results-cell"
+                >
+                  No results
+                </td>
+              </tr>
+            ) : (
+              paginatedData.map((item, rowIndex) => {
+                const rowId = getRowKey(item, rowIndex);
+                const isSelected = selectedRowIds.has(rowId);
+
+                return (
+                  <tr
+                    key={String(rowId)}
+                    role="row"
+                    aria-selected={isSelected}
+                    className={isSelected ? 'selected-row' : undefined}
+                  >
+                    {columns.map((column, colIndex) => {
+                      const isActive =
+                        rowIndex === currentActiveCell.row &&
+                        colIndex === currentActiveCell.col;
+
+                      return (
+                        <td
+                          key={String(column.accessorKey)}
+                          ref={setCellRef(rowIndex, colIndex)}
+                          role="gridcell"
+                          tabIndex={isActive ? 0 : -1}
+                          className={isActive ? 'active-cell' : undefined}
+                          onClick={() => {
+                            setActiveCell({ row: rowIndex, col: colIndex });
+                            cellRefs.current.get(getCellKey(rowIndex, colIndex))?.focus();
+                          }}
+                          onFocus={() => {
+                            setActiveCell({ row: rowIndex, col: colIndex });
+                          }}
+                        >
+                          {colIndex === 0 && isSelected && (
+                            <span className="visually-hidden">[Selected row] </span>
+                          )}
+                          {String(item[column.accessorKey])}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination Controls */}
       <div className="pagination-bar">
