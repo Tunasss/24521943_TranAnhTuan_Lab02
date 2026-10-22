@@ -2,240 +2,308 @@ import { describe, expect, it } from 'vitest';
 import { flashSaleReducer } from './flash-sale-reducer';
 import type { FlashSaleAction, FlashSaleState } from './flash-sale-types';
 
-describe('flashSaleReducer', () => {
-  const initialAvailableState: FlashSaleState = {
+/**
+ * Helper creating an AVAILABLE state.
+ */
+function createAvailableState(displayedStock = 10): FlashSaleState {
+  return {
     lock: { status: 'AVAILABLE' },
-    displayedStock: 10,
+    displayedStock,
   };
+}
 
-  it('handles RESERVE_REQUESTED optimistically from AVAILABLE', () => {
+/**
+ * Helper creating a RESERVING state.
+ */
+function createReservingState(displayedStock = 9): FlashSaleState {
+  return {
+    lock: { status: 'RESERVING' },
+    displayedStock,
+  };
+}
+
+/**
+ * Helper creating a RESERVED state.
+ */
+function createReservedState(options?: {
+  displayedStock?: number;
+  reservationId?: string;
+  expiresAt?: number;
+  extensionsUsed?: number;
+}): FlashSaleState {
+  return {
+    lock: {
+      status: 'RESERVED',
+      reservationId: options?.reservationId ?? 'res-unit-test-1',
+      expiresAt: options?.expiresAt ?? Date.now() + 60_000,
+      extensionsUsed: options?.extensionsUsed ?? 0,
+    },
+    displayedStock: options?.displayedStock ?? 8,
+  };
+}
+
+/**
+ * Helper creating a CHECKING_OUT state.
+ */
+function createCheckingOutState(options?: {
+  displayedStock?: number;
+  reservationId?: string;
+}): FlashSaleState {
+  return {
+    lock: {
+      status: 'CHECKING_OUT',
+      reservationId: options?.reservationId ?? 'res-unit-test-1',
+    },
+    displayedStock: options?.displayedStock ?? 8,
+  };
+}
+
+/**
+ * Helper creating a PURCHASED terminal state.
+ */
+function createPurchasedState(options?: {
+  displayedStock?: number;
+  orderId?: string;
+}): FlashSaleState {
+  return {
+    lock: {
+      status: 'PURCHASED',
+      orderId: options?.orderId ?? 'order-vnm-1111',
+    },
+    displayedStock: options?.displayedStock ?? 8,
+  };
+}
+
+/**
+ * Recursively freezes an object to catch accidental in-place mutations.
+ */
+function deepFreeze<T extends object>(obj: T): Readonly<T> {
+  Object.freeze(obj);
+  Object.getOwnPropertyNames(obj).forEach((prop) => {
+    const value = (obj as Record<string, unknown>)[prop];
+    if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+      deepFreeze(value);
+    }
+  });
+  return obj;
+}
+
+describe('flashSaleReducer State Machine', () => {
+  // Test 1: AVAILABLE + RESERVE_REQUESTED goes to RESERVING and decrements displayedStock
+  it('1. AVAILABLE + RESERVE_REQUESTED goes to RESERVING and decrements displayedStock', () => {
+    const state = createAvailableState(10);
     const action: FlashSaleAction = { type: 'RESERVE_REQUESTED' };
-    const nextState = flashSaleReducer(initialAvailableState, action);
+
+    const nextState = flashSaleReducer(state, action);
 
     expect(nextState.lock.status).toBe('RESERVING');
     expect(nextState.displayedStock).toBe(9);
-    // Preserves immutability
-    expect(initialAvailableState.displayedStock).toBe(10);
   });
 
-  it('rejects RESERVE_REQUESTED when displayedStock is 0', () => {
-    const zeroStockState: FlashSaleState = {
-      lock: { status: 'AVAILABLE' },
-      displayedStock: 0,
-    };
+  // Test 2: RESERVE_REQUESTED is ignored when displayedStock is 0
+  it('2. RESERVE_REQUESTED is ignored when displayedStock is 0', () => {
+    const state = createAvailableState(0);
     const action: FlashSaleAction = { type: 'RESERVE_REQUESTED' };
-    const nextState = flashSaleReducer(zeroStockState, action);
 
-    // Returns exact same state reference on illegal transition
-    expect(nextState).toBe(zeroStockState);
+    const nextState = flashSaleReducer(state, action);
+
+    expect(nextState).toBe(state);
+    expect(nextState.lock.status).toBe('AVAILABLE');
+    expect(nextState.displayedStock).toBe(0);
   });
 
-  it('allows RESERVE_REQUESTED from EXPIRED state if stock is available', () => {
-    const expiredState: FlashSaleState = {
-      lock: { status: 'EXPIRED' },
-      displayedStock: 5,
-    };
+  // Test 3: A second RESERVE_REQUESTED while RESERVING is ignored (double click)
+  it('3. A second RESERVE_REQUESTED while RESERVING is ignored (double click)', () => {
+    const state = createReservingState(9);
     const action: FlashSaleAction = { type: 'RESERVE_REQUESTED' };
-    const nextState = flashSaleReducer(expiredState, action);
 
+    const nextState = flashSaleReducer(state, action);
+
+    expect(nextState).toBe(state);
     expect(nextState.lock.status).toBe('RESERVING');
-    expect(nextState.displayedStock).toBe(4);
+    expect(nextState.displayedStock).toBe(9);
   });
 
-  it('ignores RESERVE_REQUESTED from illegal states (RESERVED, CHECKING_OUT, SOLD_OUT)', () => {
-    const reservedState: FlashSaleState = {
-      lock: {
-        status: 'RESERVED',
-        reservationId: 'res-1',
-        expiresAt: Date.now() + 60000,
-        extensionsUsed: 0,
-      },
-      displayedStock: 5,
-    };
-    expect(flashSaleReducer(reservedState, { type: 'RESERVE_REQUESTED' })).toBe(reservedState);
-  });
-
-  it('transitions RESERVE_SUCCEEDED from RESERVING to RESERVED and updates stock', () => {
-    const reservingState: FlashSaleState = {
-      lock: { status: 'RESERVING' },
-      displayedStock: 9,
-    };
+  // Test 4: RESERVING + RESERVE_SUCCEEDED goes to RESERVED with extensionsUsed 0
+  it('4. RESERVING + RESERVE_SUCCEEDED goes to RESERVED with extensionsUsed 0', () => {
+    const state = createReservingState(9);
     const action: FlashSaleAction = {
       type: 'RESERVE_SUCCEEDED',
-      reservationId: 'res-123',
-      expiresAt: 1700000000000,
+      reservationId: 'res-abc-456',
+      expiresAt: 1700000060000,
       serverStock: 8,
     };
-    const nextState = flashSaleReducer(reservingState, action);
+
+    const nextState = flashSaleReducer(state, action);
 
     expect(nextState.lock).toEqual({
       status: 'RESERVED',
-      reservationId: 'res-123',
-      expiresAt: 1700000000000,
+      reservationId: 'res-abc-456',
+      expiresAt: 1700000060000,
       extensionsUsed: 0,
     });
     expect(nextState.displayedStock).toBe(8);
   });
 
-  it('ignores RESERVE_SUCCEEDED if not in RESERVING state', () => {
-    const action: FlashSaleAction = {
-      type: 'RESERVE_SUCCEEDED',
-      reservationId: 'res-123',
-      expiresAt: 1700000000000,
-      serverStock: 8,
-    };
-    expect(flashSaleReducer(initialAvailableState, action)).toBe(initialAvailableState);
-  });
-
-  it('handles RESERVE_REJECTED with SOLD_OUT', () => {
-    const reservingState: FlashSaleState = {
-      lock: { status: 'RESERVING' },
-      displayedStock: 0,
-    };
+  // Test 5: RESERVING + RESERVE_REJECTED (SOLD_OUT) rolls displayedStock back to serverStock and goes to SOLD_OUT
+  it('5. RESERVING + RESERVE_REJECTED (SOLD_OUT) rolls displayedStock back to serverStock and goes to SOLD_OUT', () => {
+    const state = createReservingState(0);
     const action: FlashSaleAction = {
       type: 'RESERVE_REJECTED',
       reason: 'SOLD_OUT',
       serverStock: 0,
     };
-    const nextState = flashSaleReducer(reservingState, action);
+
+    const nextState = flashSaleReducer(state, action);
 
     expect(nextState.lock.status).toBe('SOLD_OUT');
     expect(nextState.displayedStock).toBe(0);
   });
 
-  it('handles RESERVE_REJECTED with NETWORK error and rolls back stock', () => {
-    const reservingState: FlashSaleState = {
-      lock: { status: 'RESERVING' },
-      displayedStock: 4,
-    };
-    const action: FlashSaleAction = {
-      type: 'RESERVE_REJECTED',
-      reason: 'NETWORK',
-      serverStock: 5,
-    };
-    const nextState = flashSaleReducer(reservingState, action);
-
-    expect(nextState.lock.status).toBe('ERROR');
-    if (nextState.lock.status === 'ERROR') {
-      expect(nextState.lock.message).toContain('Network');
-    }
-    expect(nextState.displayedStock).toBe(5);
-  });
-
-  it('handles EXTEND_SUCCEEDED once and blocks second extension', () => {
-    const reservedState: FlashSaleState = {
-      lock: {
-        status: 'RESERVED',
-        reservationId: 'res-123',
-        expiresAt: 1000,
-        extensionsUsed: 0,
-      },
-      displayedStock: 5,
-    };
-    const extendAction: FlashSaleAction = {
+  // Test 6: RESERVED + EXTEND_SUCCEEDED works once; a second extension is ignored
+  it('6. RESERVED + EXTEND_SUCCEEDED works once; a second extension is ignored', () => {
+    const state = createReservedState({
+      expiresAt: 1700000060000,
+      extensionsUsed: 0,
+    });
+    const firstExtendAction: FlashSaleAction = {
       type: 'EXTEND_SUCCEEDED',
-      expiresAt: 2000,
+      expiresAt: 1700000120000,
     };
-    const firstExtend = flashSaleReducer(reservedState, extendAction);
 
-    expect(firstExtend.lock).toEqual({
+    const stateAfterFirst = flashSaleReducer(state, firstExtendAction);
+
+    expect(stateAfterFirst.lock).toEqual({
       status: 'RESERVED',
-      reservationId: 'res-123',
-      expiresAt: 2000,
+      reservationId: 'res-unit-test-1',
+      expiresAt: 1700000120000,
       extensionsUsed: 1,
     });
 
-    // Second extension must be rejected (extensionsUsed >= 1)
-    const secondExtend = flashSaleReducer(firstExtend, {
+    const secondExtendAction: FlashSaleAction = {
       type: 'EXTEND_SUCCEEDED',
-      expiresAt: 3000,
+      expiresAt: 1700000180000,
+    };
+    const stateAfterSecond = flashSaleReducer(stateAfterFirst, secondExtendAction);
+
+    // Second extension must be completely ignored
+    expect(stateAfterSecond).toBe(stateAfterFirst);
+    expect(stateAfterSecond.lock).toEqual({
+      status: 'RESERVED',
+      reservationId: 'res-unit-test-1',
+      expiresAt: 1700000120000,
+      extensionsUsed: 1,
     });
-    expect(secondExtend).toBe(firstExtend);
   });
 
-  it('handles CHECKOUT lifecycle (REQUESTED -> SUCCEEDED / FAILED)', () => {
-    const reservedState: FlashSaleState = {
-      lock: {
-        status: 'RESERVED',
-        reservationId: 'res-xyz',
-        expiresAt: 1000,
-        extensionsUsed: 0,
-      },
-      displayedStock: 3,
+  // Test 7: RESERVED + EXPIRED goes to EXPIRED; then CHECKOUT_REQUESTED is ignored
+  it('7. RESERVED + EXPIRED goes to EXPIRED; then CHECKOUT_REQUESTED is ignored', () => {
+    const state = createReservedState({ displayedStock: 5 });
+    const expiredAction: FlashSaleAction = {
+      type: 'EXPIRED',
+      serverStock: 6,
     };
 
-    // Checkout requested
-    const checkingOut = flashSaleReducer(reservedState, { type: 'CHECKOUT_REQUESTED' });
-    expect(checkingOut.lock).toEqual({
-      status: 'CHECKING_OUT',
-      reservationId: 'res-xyz',
-    });
+    const expiredState = flashSaleReducer(state, expiredAction);
 
-    // Checkout failed
-    const failedCheckout = flashSaleReducer(checkingOut, {
-      type: 'CHECKOUT_FAILED',
-      message: 'Payment card declined',
-    });
-    expect(failedCheckout.lock).toEqual({
-      status: 'ERROR',
-      message: 'Payment card declined',
-    });
+    expect(expiredState.lock.status).toBe('EXPIRED');
+    expect(expiredState.displayedStock).toBe(6);
 
-    // Checkout succeeded
-    const succeededCheckout = flashSaleReducer(checkingOut, {
+    const checkoutAction: FlashSaleAction = { type: 'CHECKOUT_REQUESTED' };
+    const ignoredCheckoutState = flashSaleReducer(expiredState, checkoutAction);
+
+    expect(ignoredCheckoutState).toBe(expiredState);
+    expect(ignoredCheckoutState.lock.status).toBe('EXPIRED');
+  });
+
+  // Test 8: CHECKING_OUT + CHECKOUT_SUCCEEDED goes to PURCHASED; PURCHASED ignores RESERVE_REQUESTED
+  it('8. CHECKING_OUT + CHECKOUT_SUCCEEDED goes to PURCHASED; PURCHASED ignores RESERVE_REQUESTED', () => {
+    const checkingOutState = createCheckingOutState({
+      reservationId: 'res-order-789',
+      displayedStock: 3,
+    });
+    const checkoutSuccessAction: FlashSaleAction = {
       type: 'CHECKOUT_SUCCEEDED',
-      orderId: 'ord-999',
-    });
-    expect(succeededCheckout.lock).toEqual({
-      status: 'PURCHASED',
-      orderId: 'ord-999',
-    });
+      orderId: 'ORDER-VND-888',
+    };
 
-    // PURCHASED is terminal: only RESET can transition out
-    const attemptReserveAfterPurchase = flashSaleReducer(succeededCheckout, {
+    const purchasedState = flashSaleReducer(checkingOutState, checkoutSuccessAction);
+
+    expect(purchasedState.lock).toEqual({
+      status: 'PURCHASED',
+      orderId: 'ORDER-VND-888',
+    });
+    expect(purchasedState.displayedStock).toBe(3);
+
+    // PURCHASED is terminal and must ignore RESERVE_REQUESTED
+    const reserveAttempt = flashSaleReducer(purchasedState, {
       type: 'RESERVE_REQUESTED',
     });
-    expect(attemptReserveAfterPurchase).toBe(succeededCheckout);
-
-    // RESET leaves PURCHASED
-    const resetState = flashSaleReducer(succeededCheckout, {
-      type: 'RESET',
-      stock: 20,
-    });
-    expect(resetState.lock.status).toBe('AVAILABLE');
-    expect(resetState.displayedStock).toBe(20);
+    expect(reserveAttempt).toBe(purchasedState);
+    expect(reserveAttempt.lock.status).toBe('PURCHASED');
   });
 
-  it('handles EXPIRED action from RESERVED', () => {
-    const reservedState: FlashSaleState = {
-      lock: {
-        status: 'RESERVED',
-        reservationId: 'res-123',
-        expiresAt: 1000,
-        extensionsUsed: 0,
-      },
-      displayedStock: 2,
-    };
+  // Test 9: The reducer never mutates its input (use Object.freeze on the input state)
+  it('9. The reducer never mutates its input (use Object.freeze on the input state)', () => {
+    const available = deepFreeze(createAvailableState(10));
+    expect(() => {
+      flashSaleReducer(available, { type: 'RESERVE_REQUESTED' });
+    }).not.toThrow();
 
-    const expiredState = flashSaleReducer(reservedState, {
-      type: 'EXPIRED',
-      serverStock: 3,
-    });
-    expect(expiredState.lock.status).toBe('EXPIRED');
-    expect(expiredState.displayedStock).toBe(3);
+    const reserving = deepFreeze(createReservingState(9));
+    expect(() => {
+      flashSaleReducer(reserving, {
+        type: 'RESERVE_SUCCEEDED',
+        reservationId: 'res-freeze',
+        expiresAt: Date.now() + 10000,
+        serverStock: 9,
+      });
+    }).not.toThrow();
+
+    const reserved = deepFreeze(createReservedState());
+    expect(() => {
+      flashSaleReducer(reserved, { type: 'CHECKOUT_REQUESTED' });
+    }).not.toThrow();
+
+    const checkingOut = deepFreeze(createCheckingOutState());
+    expect(() => {
+      flashSaleReducer(checkingOut, {
+        type: 'CHECKOUT_SUCCEEDED',
+        orderId: 'ord-freeze',
+      });
+    }).not.toThrow();
+
+    const purchased = deepFreeze(createPurchasedState());
+    expect(() => {
+      flashSaleReducer(purchased, { type: 'RESERVE_REQUESTED' });
+    }).not.toThrow();
   });
 
-  it('enforces non-negative displayedStock invariant across sync actions', () => {
-    const synced = flashSaleReducer(initialAvailableState, {
+  // Test 10: displayedStock never becomes negative
+  it('10. displayedStock never becomes negative', () => {
+    const availableState = createAvailableState(0);
+
+    // Syncing negative stock from server is clamped to 0
+    const syncedState = flashSaleReducer(availableState, {
       type: 'STOCK_SYNCED',
-      serverStock: -5,
+      serverStock: -15,
     });
-    expect(synced.displayedStock).toBe(0);
+    expect(syncedState.displayedStock).toBe(0);
 
-    const resetNegative = flashSaleReducer(initialAvailableState, {
-      type: 'RESET',
-      stock: -10,
+    // Rejection returning negative stock is clamped to 0
+    const reservingState = createReservingState(0);
+    const rejectedState = flashSaleReducer(reservingState, {
+      type: 'RESERVE_REJECTED',
+      reason: 'SOLD_OUT',
+      serverStock: -3,
     });
-    expect(resetNegative.displayedStock).toBe(0);
+    expect(rejectedState.displayedStock).toBe(0);
+
+    // Resetting with negative stock is clamped to 0
+    const resetState = flashSaleReducer(availableState, {
+      type: 'RESET',
+      stock: -50,
+    });
+    expect(resetState.displayedStock).toBe(0);
   });
 });
