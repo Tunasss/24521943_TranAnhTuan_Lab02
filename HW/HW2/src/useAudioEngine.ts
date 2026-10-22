@@ -7,6 +7,7 @@ export interface UseAudioEngineResult {
   status: EngineStatus;
   message: string;
   queueLength: number;
+  analyser: AnalyserNode | null;
   analyserRef: RefObject<AnalyserNode | null>;
   enqueueTrack: (url: string) => Promise<AudioBuffer | void>;
   play: (buffer: AudioBuffer) => void;
@@ -25,6 +26,7 @@ export function useAudioEngine(): UseAudioEngineResult {
   const [status, setStatus] = useState<EngineStatus>('IDLE');
   const [message, setMessage] = useState<string>('Ready');
   const [queueLength, setQueueLength] = useState<number>(0);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
   // Persistent audio graph references
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -32,13 +34,19 @@ export function useAudioEngine(): UseAudioEngineResult {
   const queueRef = useRef<AudioTaskQueue | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
+  // Playback buffer queue ensuring tracks play sequentially without cutting each other off
+  const playbackQueueRef = useRef<AudioBuffer[]>([]);
+
+  // Ref bridge for recursive callback execution without declaration-order lint errors
+  const playNextBufferRef = useRef<() => void>(() => {});
+
   /**
    * Lazily initializes or resumes the AudioContext upon an explicit user interaction.
    * Adheres strictly to browser Autoplay policies.
    */
   const ensureContext = useCallback(async (): Promise<{
     ctx: AudioContext;
-    analyser: AnalyserNode;
+    analyserNode: AnalyserNode;
     queue: AudioTaskQueue;
   }> => {
     if (!audioContextRef.current) {
@@ -48,16 +56,17 @@ export function useAudioEngine(): UseAudioEngineResult {
 
       const ctx = new AudioContextConstructor();
 
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.connect(ctx.destination);
+      const analyserNode = ctx.createAnalyser();
+      analyserNode.fftSize = 256;
+      analyserNode.smoothingTimeConstant = 0.8;
+      analyserNode.connect(ctx.destination);
 
       const queue = new AudioTaskQueue(ctx);
 
       audioContextRef.current = ctx;
-      analyserRef.current = analyser;
+      analyserRef.current = analyserNode;
       queueRef.current = queue;
+      setAnalyser(analyserNode);
     }
 
     const ctx = audioContextRef.current;
@@ -67,16 +76,71 @@ export function useAudioEngine(): UseAudioEngineResult {
 
     return {
       ctx,
-      analyser: analyserRef.current as AnalyserNode,
+      analyserNode: analyserRef.current as AnalyserNode,
       queue: queueRef.current as AudioTaskQueue,
     };
   }, []);
 
   /**
-   * Stops the currently active AudioBufferSourceNode, disconnects it,
+   * Plays the next AudioBuffer waiting in the sequential playback buffer queue.
+   */
+  const playNextBuffer = useCallback((): void => {
+    if (!audioContextRef.current || !analyserRef.current) {
+      return;
+    }
+
+    const nextBuffer = playbackQueueRef.current.shift();
+    if (!nextBuffer) {
+      currentSourceRef.current = null;
+      setStatus('IDLE');
+      setMessage('All enqueued tracks finished.');
+      return;
+    }
+
+    const ctx = audioContextRef.current;
+    const analyserNode = analyserRef.current;
+
+    const source = ctx.createBufferSource();
+    source.buffer = nextBuffer;
+    source.connect(analyserNode);
+
+    source.onended = () => {
+      try {
+        source.disconnect();
+      } catch {
+        // Ignore disconnection error
+      }
+      source.onended = null;
+      currentSourceRef.current = null;
+
+      // Automatically play next waiting buffer in FIFO order
+      playNextBufferRef.current();
+    };
+
+    try {
+      source.start();
+      currentSourceRef.current = source;
+      setStatus('PLAYING');
+      setMessage('Playing audio track.');
+    } catch (err: unknown) {
+      setStatus('IDLE');
+      setMessage(err instanceof Error ? err.message : 'Failed to start playback');
+      playNextBufferRef.current();
+    }
+  }, []);
+
+  // Update ref bridge inside an effect to adhere to React pure render rules
+  useEffect(() => {
+    playNextBufferRef.current = playNextBuffer;
+  }, [playNextBuffer]);
+
+  /**
+   * Stops the currently active AudioBufferSourceNode, empties the playback buffer queue,
    * clears its references, and resets playback status.
    */
   const stop = useCallback((): void => {
+    playbackQueueRef.current = [];
+
     if (currentSourceRef.current) {
       const source = currentSourceRef.current;
       source.onended = null;
@@ -101,51 +165,15 @@ export function useAudioEngine(): UseAudioEngineResult {
   }, []);
 
   /**
-   * Plays a decoded AudioBuffer by instantiating a new AudioBufferSourceNode,
-   * routing it through the AnalyserNode, and managing its completion event.
+   * Explicitly plays a single AudioBuffer, replacing any current playback.
    */
   const play = useCallback(
     (buffer: AudioBuffer): void => {
-      if (!audioContextRef.current || !analyserRef.current) {
-        return;
-      }
-
-      const ctx = audioContextRef.current;
-      const analyser = analyserRef.current;
-
-      // Stop any existing playback first
       stop();
-
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(analyser);
-
-      source.onended = () => {
-        try {
-          source.disconnect();
-        } catch {
-          // Ignore disconnection error
-        }
-        source.onended = null;
-
-        if (currentSourceRef.current === source) {
-          currentSourceRef.current = null;
-          setStatus('IDLE');
-          setMessage('Playback finished.');
-        }
-      };
-
-      try {
-        source.start();
-        currentSourceRef.current = source;
-        setStatus('PLAYING');
-        setMessage('Playing audio track.');
-      } catch (err: unknown) {
-        setStatus('IDLE');
-        setMessage(err instanceof Error ? err.message : 'Failed to start playback');
-      }
+      playbackQueueRef.current = [buffer];
+      playNextBuffer();
     },
-    [stop],
+    [stop, playNextBuffer],
   );
 
   /**
@@ -153,6 +181,8 @@ export function useAudioEngine(): UseAudioEngineResult {
    * stops playback, and resets queue state.
    */
   const cancelAll = useCallback((): void => {
+    playbackQueueRef.current = [];
+
     if (queueRef.current) {
       queueRef.current.cancelAll();
     }
@@ -163,8 +193,8 @@ export function useAudioEngine(): UseAudioEngineResult {
   }, [stop]);
 
   /**
-   * Enqueues an audio URL into the FIFO queue and automatically plays
-   * the decoded buffer upon completion.
+   * Enqueues an audio URL into the FIFO queue and plays buffers in order.
+   * If audio is already playing, waits for the previous track to end.
    */
   const enqueueTrack = useCallback(
     async (url: string): Promise<AudioBuffer | void> => {
@@ -176,7 +206,17 @@ export function useAudioEngine(): UseAudioEngineResult {
 
         const buffer = await queue.enqueue(url);
         setQueueLength(queue.pendingCount);
-        play(buffer);
+
+        // Queue buffer for sequential playback
+        playbackQueueRef.current.push(buffer);
+
+        // Start playing immediately only if nothing is currently playing
+        if (!currentSourceRef.current) {
+          playNextBuffer();
+        } else {
+          setMessage(`Decoded ${url}. Waiting in playback queue.`);
+        }
+
         return buffer;
       } catch (err: unknown) {
         if (queueRef.current) {
@@ -194,7 +234,7 @@ export function useAudioEngine(): UseAudioEngineResult {
         }
       }
     },
-    [ensureContext, play],
+    [ensureContext, playNextBuffer],
   );
 
   /**
@@ -203,6 +243,8 @@ export function useAudioEngine(): UseAudioEngineResult {
    */
   useEffect(() => {
     return () => {
+      playbackQueueRef.current = [];
+
       if (queueRef.current) {
         queueRef.current.cancelAll();
       }
@@ -236,6 +278,7 @@ export function useAudioEngine(): UseAudioEngineResult {
     status,
     message,
     queueLength,
+    analyser,
     analyserRef,
     enqueueTrack,
     play,
