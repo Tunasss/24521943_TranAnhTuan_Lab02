@@ -1,0 +1,49 @@
+/* Accessible visually hidden class for assistive technologies */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Sort button styling ensuring accessible keyboard focus and target size */
+.sort-button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  margin: -0.35rem -0.5rem;
+  min-height: 24px;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.sort-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sort-button:focus-visible {
+  outline: 2px solid var(--accent, #aa3bff);
+  outline-offset: 2px;
+}
+
+.sort-indicator {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.sort-indicator-inactive {
+  font-size: 0.85em;
+  opacity: 0.4;
+}
