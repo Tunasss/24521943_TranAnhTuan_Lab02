@@ -5,10 +5,11 @@ import './DataGrid.css';
 type SortDirection = 'asc' | 'desc';
 
 /**
- * DataGrid component with sorting, multi-column filtering, semantic HTML table markup,
- * and WCAG 2.2 Level AA / ARIA grid compliant accessibility semantics.
+ * DataGrid component featuring sorting, multi-column filtering, client-side pagination,
+ * semantic HTML table markup, and WCAG 2.2 Level AA / ARIA grid compliant accessibility.
  *
- * Invariant: Preserves the public contract and enforces generic type safety without mutating input props.
+ * Invariant: Preserves the public contract, executes operations in order (filter -> sort -> paginate),
+ * and enforces strict type safety without mutating input props.
  */
 export function DataGrid<T extends object>({
   data,
@@ -16,36 +17,16 @@ export function DataGrid<T extends object>({
   ariaLabel,
 }: DataGridProps<T>): ReactElement {
   const filterInputId = useId();
+  const pageSizeSelectId = useId();
 
   // State management for sorting, filtering, and pagination
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterText, setFilterText] = useState<string>('');
+  const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  /**
-   * Updates filter query and resets pagination back to page 1.
-   */
-  const handleFilterChange = (event: ChangeEvent<HTMLInputElement>): void => {
-    setFilterText(event.target.value);
-    setCurrentPage(1);
-  };
-
-  /**
-   * Cycles sorting state: none -> asc -> desc -> asc.
-   */
-  const handleSort = (key: keyof T): void => {
-    if (sortKey !== key) {
-      setSortKey(key);
-      setSortDirection('asc');
-    } else {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    }
-  };
-
-  /**
-   * Filters records case-insensitively across all defined columns.
-   */
+  // 1. Filter: Case-insensitive match across all defined columns
   const filteredData = useMemo(() => {
     const query = filterText.trim().toLowerCase();
     if (!query) {
@@ -63,10 +44,7 @@ export function DataGrid<T extends object>({
     );
   }, [data, columns, filterText]);
 
-  /**
-   * Produces a sorted shallow copy of the filtered dataset without mutating input data.
-   * Compares numbers numerically and strings using localeCompare.
-   */
+  // 2. Sort: Produces a sorted shallow copy of the filtered dataset
   const sortedData = useMemo(() => {
     if (sortKey === null) {
       return filteredData;
@@ -93,8 +71,62 @@ export function DataGrid<T extends object>({
     });
   }, [filteredData, sortKey, sortDirection]);
 
+  // Total pages calculation and page boundary clamping
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize));
+  const effectivePage = Math.min(Math.max(1, currentPage), totalPages);
+
+  // 3. Paginate: Slices sortedData according to current page and page size
+  const paginatedData = useMemo(() => {
+    const startIndex = (effectivePage - 1) * pageSize;
+    return sortedData.slice(startIndex, startIndex + pageSize);
+  }, [sortedData, effectivePage, pageSize]);
+
+  /**
+   * Updates filter query and resets page to 1.
+   */
+  const handleFilterChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    setFilterText(event.target.value);
+    setCurrentPage(1);
+  };
+
+  /**
+   * Updates page size and clamps current page within new bounds.
+   */
+  const handlePageSizeChange = (event: ChangeEvent<HTMLSelectElement>): void => {
+    const newSize = Number(event.target.value);
+    setPageSize(newSize);
+    const newTotalPages = Math.max(1, Math.ceil(sortedData.length / newSize));
+    setCurrentPage((prev) => Math.min(Math.max(1, prev), newTotalPages));
+  };
+
+  /**
+   * Moves to previous page safely.
+   */
+  const handlePrevPage = (): void => {
+    setCurrentPage((prev) => Math.max(1, prev - 1));
+  };
+
+  /**
+   * Moves to next page safely.
+   */
+  const handleNextPage = (): void => {
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+  };
+
+  /**
+   * Cycles sorting state: none -> asc -> desc -> asc.
+   */
+  const handleSort = (key: keyof T): void => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortDirection('asc');
+    } else {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    }
+  };
+
   return (
-    <div className="datagrid-wrapper" data-page={currentPage}>
+    <div className="datagrid-wrapper" data-page={effectivePage}>
       {/* Filtering Toolbar */}
       <div className="filter-container">
         <label htmlFor={filterInputId} className="filter-label">
@@ -166,7 +198,7 @@ export function DataGrid<T extends object>({
           </tr>
         </thead>
         <tbody>
-          {sortedData.length === 0 ? (
+          {paginatedData.length === 0 ? (
             <tr role="row">
               <td
                 role="gridcell"
@@ -177,7 +209,7 @@ export function DataGrid<T extends object>({
               </td>
             </tr>
           ) : (
-            sortedData.map((item, rowIndex) => (
+            paginatedData.map((item, rowIndex) => (
               <tr key={rowIndex} role="row">
                 {columns.map((column) => (
                   <td key={String(column.accessorKey)} role="gridcell">
@@ -189,6 +221,47 @@ export function DataGrid<T extends object>({
           )}
         </tbody>
       </table>
+
+      {/* Pagination Controls */}
+      <div className="pagination-bar">
+        <div className="page-size-selector">
+          <label htmlFor={pageSizeSelectId} className="page-size-label">
+            Rows per page:
+          </label>
+          <select
+            id={pageSizeSelectId}
+            value={pageSize}
+            onChange={handlePageSizeChange}
+            className="page-size-select"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+        </div>
+
+        <nav aria-label="Grid pagination" className="pagination-nav">
+          <button
+            type="button"
+            onClick={handlePrevPage}
+            disabled={effectivePage <= 1}
+            className="pagination-button"
+          >
+            Previous
+          </button>
+          <p role="status" aria-live="polite" className="page-status">
+            Page {effectivePage} of {totalPages}
+          </p>
+          <button
+            type="button"
+            onClick={handleNextPage}
+            disabled={effectivePage >= totalPages}
+            className="pagination-button"
+          >
+            Next
+          </button>
+        </nav>
+      </div>
     </div>
   );
 }
