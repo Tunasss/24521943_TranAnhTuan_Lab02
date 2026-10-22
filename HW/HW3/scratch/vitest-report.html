@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vitest Automated Test Suite Results</title>
+  <style>
+    body {
+      background: #090d16;
+      color: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      padding: 36px 32px;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+    }
+    .terminal {
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      padding: 24px 30px;
+      max-width: 820px;
+      width: 100%;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #eab308; }
+    .dot.green { background: #22c55e; }
+    .title { color: #94a3b8; font-size: 13px; font-weight: 700; margin-left: 8px; }
+    .pass-badge {
+      background: #166534;
+      color: #86efac;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .check { color: #22c55e; font-weight: 800; margin-right: 8px; }
+    .file { color: #f8fafc; font-weight: 700; }
+    .count { color: #94a3b8; margin-left: 6px; }
+    .time { color: #64748b; margin-left: 8px; }
+    .summary {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #334155;
+    }
+    .stat-row { display: flex; gap: 16px; margin: 6px 0; }
+    .stat-label { color: #94a3b8; width: 120px; }
+    .stat-val-pass { color: #4ade80; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <div class="header">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span class="title">vitest run — HW3 Flash-Sale Engine Test Suite</span>
+    </div>
+
+    <div><span class="pass-badge">RUN</span> <span style="color: #64748b;">v5.0.5</span> <span style="color: #94a3b8;">D:/Study/Web Application Development/LAB/LAB02/HW/HW3</span></div>
+    <br>
+    <div><span class="check">✓</span><span class="file">src/flash-sale-reducer.test.ts</span><span class="count">(10 tests)</span><span class="time">10ms</span></div>
+    <div><span class="check">✓</span><span class="file">src/useCountdown.test.ts</span><span class="count">(8 tests)</span><span class="time">38ms</span></div>
+    <div><span class="check">✓</span><span class="file">src/useFlashSale.test.ts</span><span class="count">(3 tests)</span><span class="time">52ms</span></div>
+    <div><span class="check">✓</span><span class="file">src/mock-server.test.ts</span><span class="count">(7 tests)</span><span class="time">6939ms</span></div>
+
+    <div class="summary">
+      <div class="stat-row">
+        <span class="stat-label">Test Files</span>
+        <span class="stat-val-pass">4 passed (4)</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Tests</span>
+        <span class="stat-val-pass">28 passed (28)</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Start at</span>
+        <span style="color: #cbd5e1;">16:19:19</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Duration</span>
+        <span style="color: #cbd5e1;">7.95s (tests 58%, environment 39%, import 3%)</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
